@@ -2,6 +2,50 @@
 
 All notable changes to this project will be documented in this file. This project uses [semantic versioning](https://semver.org/).
 
+## 2.12.0 (2023-05-14)
+  * Housekeeping.
+
+## 2.11.1 (2023-04-13)
+## 2.11.0 (2023-04-13)
+  * Feature: allow for user-selectable cloud geographic regions for the myQ API.
+
+## 2.10.2 (2023-04-11)
+## 2.10.1 (2023-04-11)
+  * Fix: webUI bugfixes.
+  * Housekeeping.
+
+## 2.10.0 (2023-04-10)
+  * Improvement: better performance across the board.
+  * Housekeeping.
+
+## 2.9.0 (2023-01-03)
+  * Feature: new feature option to allow users to disable battery notifications for myQ devices with a battery-enabled door position sensor. You can disable low battery notifications by using `Disable.BatteryInfo`.
+  * Feature: new feature option to allow for setting garage door openers to read-only. You can configure garage door openers as read-only using `Enable.ReadOnly`.
+
+## 2.8.3 (2022-12-27)
+  * More housekeeping.
+
+## 2.8.2 (2022-12-27)
+  * Dependency updates and housekeeping.
+
+## 2.8.1 (2022-12-05)
+  * Web UI to peruse through the list of detected myQ devices.
+  * Dependency updates and housekeeping.
+
+## 2.8.0 (2022-12-05)
+  * Web UI to peruse through the list of detected myQ devices.
+  * Dependency updates and housekeeping.
+
+## 2.7.4 (2022-01-17)
+  * Dependency updates.
+
+## 2.7.3 (2022-01-09)
+  * Housekeeping.
+
+## 2.7.2 (2022-01-01)
+  * Lock `mqtt` upstream package version due to a bug introduced in a newer version until it gets sorted out.
+  * Dependency updates.
+
 ## 2.7.1 (2021-09-18)
   * A housekeeping release to remove the core myQ API library out of this plugin and into it's own package to make it available to other developers who want to support myQ capabilities in their projects.
 

@@ -1,31 +1,17 @@
-/* Copyright(C) 2017-2021, HJD (https://github.com/hjdhjd). All rights reserved.
+/* Copyright(C) 2017-2023, HJD (https://github.com/hjdhjd). All rights reserved.
  *
  * myq-platform.ts: homebridge-myq platform class.
  */
-import {
-  API,
-  APIEvent,
-  DynamicPlatformPlugin,
-  HAP,
-  Logging,
-  PlatformAccessory,
-  PlatformConfig
-} from "homebridge";
-import {
-  MYQ_ACTIVE_DEVICE_REFRESH_DURATION,
-  MYQ_ACTIVE_DEVICE_REFRESH_INTERVAL,
-  MYQ_DEVICE_REFRESH_INTERVAL,
-  MYQ_MQTT_TOPIC,
-  PLATFORM_NAME,
-  PLUGIN_NAME
-} from "./settings";
+import { API, APIEvent, DynamicPlatformPlugin, HAP, Logging, PlatformAccessory, PlatformConfig } from "homebridge";
+import { MYQ_ACTIVE_DEVICE_REFRESH_DURATION, MYQ_ACTIVE_DEVICE_REFRESH_INTERVAL, MYQ_DEVICE_REFRESH_INTERVAL, MYQ_MQTT_TOPIC,
+  PLATFORM_NAME, PLUGIN_NAME } from "./settings.js";
 import { myQApi, myQDevice } from "@hjdhjd/myq";
-import { myQAccessory } from "./myq-accessory";
-import { myQGarageDoor } from "./myq-garagedoor";
-import { myQLamp } from "./myq-lamp";
-import { myQMqtt } from "./myq-mqtt";
-import { myQOptionsInterface } from "./myq-config";
-import util from "util";
+import { myQAccessory } from "./myq-accessory.js";
+import { myQGarageDoor } from "./myq-garagedoor.js";
+import { myQLamp } from "./myq-lamp.js";
+import { myQMqtt } from "./myq-mqtt.js";
+import { myQOptionsInterface } from "./myq-config.js";
+import util from "node:util";
 
 interface myQPollInterface {
   count: number,
@@ -33,9 +19,11 @@ interface myQPollInterface {
 }
 
 export class myQPlatform implements DynamicPlatformPlugin {
+
   private readonly accessories: PlatformAccessory[];
   public readonly api: API;
   public config!: myQOptionsInterface;
+  private readonly configOptions: string[];
   private readonly configuredAccessories: { [index: string]: myQAccessory };
   public readonly hap: HAP;
   public readonly log: Logging;
@@ -49,6 +37,7 @@ export class myQPlatform implements DynamicPlatformPlugin {
 
     this.accessories = [];
     this.api = api;
+    this.configOptions = [];
     this.configuredAccessories = {};
     this.hap = api.hap;
     this.log = log;
@@ -57,16 +46,19 @@ export class myQPlatform implements DynamicPlatformPlugin {
 
     // We can't start without being configured.
     if(!config) {
+
       return;
     }
 
     this.config = {
+
       activeRefreshDuration: "activeRefreshDuration" in config ? parseInt(config.activeRefreshDuration as string) : MYQ_ACTIVE_DEVICE_REFRESH_DURATION,
       activeRefreshInterval: "activeRefreshInterval" in config ? parseInt(config.activeRefreshInterval as string) : MYQ_ACTIVE_DEVICE_REFRESH_INTERVAL,
       debug: config.debug === true,
       email: config.email as string,
-      mqttTopic: "mqttTopic" in config ? config.mqttTopic as string : MYQ_MQTT_TOPIC,
+      mqttTopic: config.mqttTopic as string ?? MYQ_MQTT_TOPIC,
       mqttUrl: config.mqttUrl as string,
+      myQRegion: config.myQRegion as string,
       name: config.name as string,
       options: config.options as string[],
       password: config.password as string,
@@ -75,6 +67,7 @@ export class myQPlatform implements DynamicPlatformPlugin {
 
     // We need login credentials or we're not starting.
     if(!this.config.email || !this.config.password) {
+
       this.log.error("No myQ login credentials configured.");
       return;
     }
@@ -101,6 +94,15 @@ export class myQPlatform implements DynamicPlatformPlugin {
 
     }
 
+    // If we have feature options, put them into their own array, upper-cased for future reference.
+    if(this.config.options) {
+
+      for(const featureOption of this.config.options) {
+
+        this.configOptions.push(featureOption.toUpperCase());
+      }
+    }
+
     // Make sure the refresh interval is reasonable.
     if((this.config.refreshInterval < 5) || (this.config.refreshInterval !== this.config.refreshInterval)) {
 
@@ -115,15 +117,17 @@ export class myQPlatform implements DynamicPlatformPlugin {
     this.debug("Debug logging on. Expect a lot of data.");
 
     this.pollOptions = {
+
       count: this.config.activeRefreshDuration / this.config.activeRefreshInterval,
       maxCount: this.config.activeRefreshDuration / this.config.activeRefreshInterval
     };
 
     // Initialize our connection to the myQ API.
-    this.myQ = new myQApi(this.config.email, this.config.password, this.log);
+    this.myQ = new myQApi(this.config.email, this.config.password, this.log, this.config.myQRegion);
 
     // Create an MQTT connection, if needed.
     if(!this.mqtt && this.config.mqttUrl) {
+
       this.mqtt = new myQMqtt(this);
     }
 
@@ -158,6 +162,7 @@ export class myQPlatform implements DynamicPlatformPlugin {
 
       // Check to see if this accessory's device object is still in myQ or not.
       if(!this.myQ.devices.some(x => x.serial_number === (accessory.context.device as myQDevice).serial_number)) {
+
         accessory.context.device = null;
       }
     }
@@ -186,11 +191,13 @@ export class myQPlatform implements DynamicPlatformPlugin {
           // Unless we are debugging device discovery, ignore any gateways.
           // These are typically gateways, hubs, etc. that shouldn't be causing us to alert anyway.
           if(!this.config.debug && device.device_family === "gateway") {
+
             continue;
           }
 
           // If we've already informed the user about this one, we're done.
           if(this.unsupportedDevices[device.serial_number]) {
+
             continue;
           }
 
@@ -205,6 +212,7 @@ export class myQPlatform implements DynamicPlatformPlugin {
 
       // Exclude or include certain openers based on configuration parameters.
       if(!this.optionEnabled(device)) {
+
         continue;
       }
 
@@ -229,6 +237,7 @@ export class myQPlatform implements DynamicPlatformPlugin {
 
       // If we've already configured this accessory, we're done here.
       if(this.configuredAccessories[accessory.UUID]) {
+
         continue;
       }
 
@@ -265,6 +274,7 @@ export class myQPlatform implements DynamicPlatformPlugin {
 
       // We found this accessory in myQ. Figure out if we really want to see it in HomeKit.
       if(device && this.optionEnabled(device)) {
+
         continue;
       }
 
@@ -313,6 +323,7 @@ export class myQPlatform implements DynamicPlatformPlugin {
     // for this increased polling frequency (activeRefreshDuration) and the actual frequency of
     // each update (activeRefreshInterval).
     if(this.pollOptions.count < this.pollOptions.maxCount) {
+
       refresh = this.config.activeRefreshInterval + delay;
       this.pollOptions.count++;
     }
@@ -324,6 +335,7 @@ export class myQPlatform implements DynamicPlatformPlugin {
 
         // Refresh our myQ information and gracefully handle myQ errors.
         if(!(await this.updateAccessories())) {
+
           this.pollOptions.count = this.pollOptions.maxCount - 1;
         }
 
@@ -336,61 +348,102 @@ export class myQPlatform implements DynamicPlatformPlugin {
 
   }
 
-  // Utility function to let us know if a myQ device should be visible in HomeKit or not.
-  private optionEnabled(device: myQDevice | null, option = "", defaultReturnValue = true): boolean {
+  // Utility function to let us know if a device or feature should be enabled or not.
+  public optionEnabled(device: myQDevice | null, option = "", defaultReturnValue = true): boolean {
 
-    // There are a couple of ways to hide and show devices that we support. The rules of the road are:
+    // There are a couple of ways to enable and disable options. The rules of the road are:
     //
-    // 1. Explicitly hiding, or showing a gateway device propogates to all the devices that are plugged
-    //    into that gateway. So if you have multiple gateways but only want one exposed in this plugin,
-    //    you may do so by hiding it.
+    // 1. Explicitly disabling, or enabling an option on the myQ gateway propogates to all the devices
+    //    that are managed by that gateway. Why might you want to do this? Because...
     //
-    // 2. Explicitly hiding, or showing an opener device by its serial number will always override the above.
-    //    This means that it's possible to hide a gateway, and all the openers that are attached to it, and then
-    //    override that behavior on a single opener device that it's connected to.
-    //
+    // 2. Explicitly disabling, or enabling an option on a device by its serial number will always
+    //    override the above. This means that it's possible to disable an option for a gateway,
+    //    and all the devices that are managed by it, and then override that behavior on a single
+    //    device that it's managing.
 
-    // Nothing configured - we show all myQ devices to HomeKit.
-    if(!this.config.options) {
+    // Nothing configured - we assume the default return value.
+    if(!this.configOptions) {
+
       return defaultReturnValue;
     }
 
     // No device. Sure, we'll show it.
     if(!device) {
+
       return true;
     }
 
-    if(option) {
-      this.debug("Option: %s", option);
+    // Upper case parameters for easier checks.
+    option = option ? option.toUpperCase() : "";
+
+    const deviceSerial = (device.serial_number ?? "").toUpperCase();
+
+    let optionSetting;
+
+    // If we've specified a device, check for device-specific options first. Otherwise, we're dealing
+    // with a gateway-specific or global option.
+    if(deviceSerial) {
+
+      // First we test for device-level option settings.
+      // No option specified means we're testing to see if this device should be shown in HomeKit.
+      optionSetting = option ? option + "." + deviceSerial : deviceSerial;
+
+      // We've explicitly enabled this option for this device.
+      if(this.configOptions.indexOf("ENABLE." + optionSetting) !== -1) {
+
+        return true;
+      }
+
+      // We've explicitly disabled this option for this device.
+      if(this.configOptions.indexOf("DISABLE." + optionSetting) !== -1) {
+
+        return false;
+      }
     }
 
-    // We've explicitly enabled this device.
-    if(this.config.options.indexOf("Enable." + (device.serial_number)) !== -1) {
+    // If we don't have a gateway attached to this device, we're done here.
+    if(!device.parent_device_id || !device.parent_device_id.length) {
+
+      return defaultReturnValue;
+    }
+
+    // Now we test for gateway-level option settings.
+    // No option specified means we're testing to see if the devices attached to this gateway should be shown in HomeKit.
+    const gatewaySerial = device.parent_device_id.toUpperCase();
+    optionSetting = option ? option + "." + gatewaySerial : gatewaySerial;
+
+    // We've explicitly enabled this option for this gateway and all the devices attached to it.
+    if(this.configOptions.indexOf("ENABLE." + optionSetting) !== -1) {
+
       return true;
     }
 
-    // We've explicitly hidden this opener.
-    if(this.config.options.indexOf("Disable." + device.serial_number) !== -1) {
+    // We've explicitly disabled this option for this gateway and all the devices attached to it.
+    if(this.configOptions.indexOf("DISABLE." + optionSetting) !== -1) {
+
       return false;
     }
 
-    // If we don't have a gateway device attached to this opener, we're done here.
-    if(!device.parent_device_id) {
+    // Finally, let's see if we have a global option here.
+    // No option means we're done - it's a special case for testing if a gateway or attached device should be hidden in HomeKit.
+    if(!option) {
+
+      return defaultReturnValue;
+    }
+
+    // We've explicitly enabled this globally for all devices.
+    if(this.configOptions.indexOf("ENABLE." + option) !== -1) {
+
       return true;
     }
 
-    // We've explicitly shown the gateway this opener is attached to.
-    if(this.config.options.indexOf("Enable." + device.parent_device_id) !== -1) {
-      return true;
-    }
+    // We've explicitly disabled this globally for all devices.
+    if(this.configOptions.indexOf("DISABLE." + option) !== -1) {
 
-    // We've explicitly hidden the gateway this opener is attached to.
-    if(this.config.options.indexOf("Disable." + device.parent_device_id) !== -1) {
       return false;
     }
 
-
-    // Nothing special to do - make this opener visible.
+    // Nothing special to do - assume the option is defaultReturnValue.
     return defaultReturnValue;
   }
 
@@ -398,6 +451,7 @@ export class myQPlatform implements DynamicPlatformPlugin {
   public debug(message: string, ...parameters: unknown[]): void {
 
     if(this.config.debug) {
+
       this.log.info(util.format(message, ...parameters));
     }
   }

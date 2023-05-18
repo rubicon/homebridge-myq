@@ -1,13 +1,13 @@
-/* Copyright(C) 2017-2021, HJD (https://github.com/hjdhjd). All rights reserved.
+/* Copyright(C) 2017-2023, HJD (https://github.com/hjdhjd). All rights reserved.
  *
  * myq-mqtt.ts: MQTT connectivity class for myQ.
  */
 import { Logging, PlatformAccessory } from "homebridge";
 import mqtt, { MqttClient } from "mqtt";
-import { MYQ_MQTT_RECONNECT_INTERVAL } from "./settings";
+import { MYQ_MQTT_RECONNECT_INTERVAL } from "./settings.js";
 import { myQDevice } from "@hjdhjd/myq";
-import { myQOptions } from "./myq-config";
-import { myQPlatform } from "./myq-platform";
+import { myQOptions } from "./myq-config.js";
+import { myQPlatform } from "./myq-platform.js";
 
 export class myQMqtt {
   private config: myQOptions;

@@ -2,6 +2,7 @@
   "pluginAlias": "myQ",
   "pluginType": "platform",
   "singular": true,
+  "customUi": true,
   "headerDisplay": "[homebridge-myq](https://github.com/hjdhjd/homebridge-myq) provides HomeKit support to myQ-enabled smart garage door openers and other devices.",
   "footerDisplay": "See the [homebridge-myq developer page](https://github.com/hjdhjd/homebridge-myq) for detailed documentation, including [feature options](https://github.com/hjdhjd/homebridge-myq#feature-options).",
   "schema": {
@@ -13,7 +14,10 @@
         "type": "string",
         "required": true,
         "placeholder": "user@example.com",
-        "description": "Email address used for your myQ account."
+        "description": "Email address used for your myQ account.",
+        "x-schema-form": {
+           "type": "email"
+         }
       },
 
       "password": {
@@ -21,7 +25,10 @@
         "type": "string",
         "required": true,
         "placeholder": "mypassword",
-        "description": "Password used for your myQ account."
+        "description": "Password used for your myQ account.",
+        "x-schema-form": {
+           "type": "password"
+         }
       },
 
       "name": {
@@ -60,6 +67,14 @@
         "format": "uri",
         "placeholder": "e.g. mqtt://1.2.3.4",
         "description": "URL for the MQTT broker you'd like to publish event messages to. Default: None."
+      },
+
+      "myQRegion": {
+        "type": "string",
+        "title": "myQ API Cloud Region",
+        "required": false,
+        "placeholder": "e.g. east",
+        "description": "The cloud geographic region to access the myQ API. Valid values are only east or west. Default: autoselected by the myQ API."
       },
 
       "refreshInterval": {
@@ -162,6 +177,7 @@
         {
           "description": "These settings should be rarely used or needed by most people. Use these with caution.",
           "items": [
+            "myQRegion",
             "refreshInterval",
             "activeRefreshInterval",
             "activeRefreshDuration",

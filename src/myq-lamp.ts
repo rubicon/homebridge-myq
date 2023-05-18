@@ -1,14 +1,9 @@
-/* Copyright(C) 2017-2021, HJD (https://github.com/hjdhjd). All rights reserved.
+/* Copyright(C) 2017-2023, HJD (https://github.com/hjdhjd). All rights reserved.
  *
  * myq-lamp.ts: Lamp device class for myQ.
  */
-import {
-  CharacteristicEventTypes,
-  CharacteristicGetCallback,
-  CharacteristicSetCallback,
-  CharacteristicValue
-} from "homebridge";
-import { myQAccessory } from "./myq-accessory";
+import { CharacteristicValue } from "homebridge";
+import { myQAccessory } from "./myq-accessory.js";
 import { myQDevice } from "@hjdhjd/myq";
 
 export class myQLamp extends myQAccessory {
@@ -62,8 +57,10 @@ export class myQLamp extends myQAccessory {
 
     switchService
       .getCharacteristic(this.hap.Characteristic.On)
-      .on(CharacteristicEventTypes.GET, this.getLampState.bind(this))
-      .on(CharacteristicEventTypes.SET, this.setLampState.bind(this));
+      .onGet(() => {
+        return this.accessory.context.lampState === true;
+      })
+      .onSet(this.setLampState.bind(this));
 
     switchService.updateCharacteristic(this.hap.Characteristic.On, this.accessory.context.lampState as boolean);
     switchService.setPrimaryService(true);
@@ -86,7 +83,7 @@ export class myQLamp extends myQAccessory {
       }
 
       // Publish the state of the lamp.
-      this.platform.mqtt?.publish(this.accessory, "lamp", (this.accessory.context.lampState as boolean) ? "On" : "Off");
+      this.platform.mqtt?.publish(this.accessory, "lamp", (this.accessory.context.lampState as boolean) ? "on" : "off");
       this.log.info("%s: Lamp status published via MQTT.", this.name());
     });
 
@@ -128,13 +125,8 @@ export class myQLamp extends myQAccessory {
 
   }
 
-  // Return lamp status.
-  private getLampState(callback: CharacteristicGetCallback): void {
-    callback(null, this.accessory.context.lampState === true);
-  }
-
   // Turn on or off the lamp.
-  private setLampState(value: CharacteristicValue, callback?: CharacteristicSetCallback): boolean {
+  private setLampState(value: CharacteristicValue): boolean {
 
     if((this.accessory.context.lampState as boolean) !== value) {
       this.log.info("%s: %s.", this.name(), (value === true) ? "On" : "Off");
@@ -146,11 +138,6 @@ export class myQLamp extends myQAccessory {
 
     // Execute the command.
     void this.lampCommand(value);
-
-    // Inform HomeKit.
-    if(callback) {
-      callback(null);
-    }
 
     return true;
 
@@ -184,7 +171,7 @@ export class myQLamp extends myQAccessory {
       }
 
       this.accessory.context.lampState = myQState === true;
-      this.accessory.getService(this.hap.Service.Switch)?.updateCharacteristic(this.hap.Characteristic.On, this.accessory.context.lampState);
+      this.accessory.getService(this.hap.Service.Switch)?.updateCharacteristic(this.hap.Characteristic.On, this.accessory.context.lampState as boolean);
 
       // eslint-disable-next-line camelcase
       (this.accessory.context.device as myQDevice).state.lamp_state = this.accessory.context.lampState ? "on" : "off";
@@ -196,12 +183,10 @@ export class myQLamp extends myQAccessory {
       this.log.info("%s: %s.", this.name(), myQState ? "On" : "Off");
 
       // Publish to MQTT, if the user has configured it.
-      this.platform.mqtt?.publish(this.accessory, "lamp", myQState ? "On" : "Off");
-
+      this.platform.mqtt?.publish(this.accessory, "lamp", myQState ? "on" : "off");
     }
 
     return true;
-
   }
 
   // Return the status of the lamp. This function maps myQ lamp status to HomeKit lamp status.
@@ -229,7 +214,6 @@ export class myQLamp extends myQAccessory {
     }
 
     return myQState;
-
   }
 
   // Execute lamp commands.
@@ -256,5 +240,4 @@ export class myQLamp extends myQAccessory {
 
     return super.command(myQCommand);
   }
-
 }

@@ -1,11 +1,11 @@
-/* Copyright(C) 2017-2021, HJD (https://github.com/hjdhjd). All rights reserved.
+/* Copyright(C) 2017-2023, HJD (https://github.com/hjdhjd). All rights reserved.
  *
  * myq-accessory.ts: Base class for all myQ accessories.
  */
 import { API, HAP, Logging, PlatformAccessory } from "homebridge";
 import { myQApi, myQDevice } from "@hjdhjd/myq";
-import { myQOptions } from "./myq-config";
-import { myQPlatform } from "./myq-platform";
+import { myQOptions } from "./myq-config.js";
+import { myQPlatform } from "./myq-platform.js";
 
 export abstract class myQAccessory {
   protected readonly accessory: PlatformAccessory;
